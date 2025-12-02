@@ -69,3 +69,4 @@ asset_metadata = {
 2.  Dock UX could use some love to make it more manageable with large number of assets
 3.  Currently you need to Alt-Tab back after models are generated so that Godot can auto generate the required data from the new models (its supposed to be automatic but I noticed it sometimes doesn’t happen until alt tab back in)
 4. Canvas is very limited, check gd_paint for a paint tool that can be incorporated in the plugin
+5. Deleting assets outside of the editor crashes the plugin, reload the plugin as a workaround
