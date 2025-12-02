@@ -7,5 +7,14 @@
 		"mesh_url": "https://v3b.fal.media/files/b/0a84bb1b/xrMlsrqNHVOZ9Ng9KRFw9_model.glb",
 		"prompt": "teapot",
 		"thumbnail": "thumb_2658880.png"
+	},
+	{
+		"created_at": "2025-12-02T12:55:56",
+		"id": "3495180",
+		"image_url": "https://v3b.fal.media/files/b/0a84bb6a/sNifwgMOvhpj7-L3X87Ey.png",
+		"mesh_file": "mesh_3495180.glb",
+		"mesh_url": "https://v3b.fal.media/files/b/0a84bb6f/Gd3p-fI7IARF5xKpaBJVG_model.glb",
+		"prompt": "teapot",
+		"thumbnail": "thumb_3495180.png"
 	}
 ]

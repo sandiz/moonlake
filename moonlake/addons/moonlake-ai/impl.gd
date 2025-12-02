@@ -231,8 +231,9 @@ func create_asset_item(asset: Dictionary) -> Control:
 
 	var thumb_path = assets_dir + asset.thumbnail
 	if FileAccess.file_exists(thumb_path):
+		var image_bytes = FileAccess.get_file_as_bytes(thumb_path)
 		var image = Image.new()
-		var error = image.load(thumb_path)
+		var error = image.load_png_from_buffer(image_bytes)
 		if error == OK:
 			var texture = ImageTexture.create_from_image(image)
 			var texture_rect = TextureRect.new()
@@ -307,8 +308,9 @@ func _get_drag_data_for_asset(from_position: Vector2, asset: Dictionary):
 
 	var thumb_path = assets_dir + asset.thumbnail
 	if FileAccess.file_exists(thumb_path):
+		var image_bytes = FileAccess.get_file_as_bytes(thumb_path)
 		var image = Image.new()
-		var error = image.load(thumb_path)
+		var error = image.load_png_from_buffer(image_bytes)
 		if error == OK:
 			var texture = ImageTexture.create_from_image(image)
 			var texture_rect = TextureRect.new()
@@ -348,7 +350,8 @@ func _on_asset_clicked(asset: Dictionary):
 	# Load and display thumbnail
 	var thumb_path = assets_dir + asset.thumbnail
 	if FileAccess.file_exists(thumb_path):
+		var image_bytes = FileAccess.get_file_as_bytes(thumb_path)
 		var image = Image.new()
-		var error = image.load(thumb_path)
+		var error = image.load_png_from_buffer(image_bytes)
 		if error == OK:
 			detail_image.texture = ImageTexture.create_from_image(image)
