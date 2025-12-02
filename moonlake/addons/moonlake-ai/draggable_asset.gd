@@ -13,7 +13,6 @@ func setup(asset: Dictionary, dir: String):
 	custom_minimum_size = Vector2(100, 100)
 
 func _get_drag_data(at_position: Vector2):
-	# Only allow dragging if there's a scene file
 	if not asset_data.has("scene_file") or asset_data.scene_file.is_empty():
 		return null
 
@@ -23,7 +22,6 @@ func _get_drag_data(at_position: Vector2):
 
 	print("Starting drag for scene: ", scene_path)
 
-	# Create drag preview
 	var preview = VBoxContainer.new()
 
 	var thumb_path = assets_dir + asset_data.thumbnail
@@ -47,7 +45,6 @@ func _get_drag_data(at_position: Vector2):
 
 	set_drag_preview(preview)
 
-	# Return drag data in the format the editor expects
 	return {
 		"type": "files",
 		"files": [scene_path]

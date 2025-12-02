@@ -1,7 +1,7 @@
 @tool
 extends Control
 
-#const FAL_API_KEY = "7f90fe57-7676-42b5-9b2b-a09202face5b:45dc1802c220a66d78359904ad188fb5"
+# const FAL_API_KEY = "7f90fe57-7676-42b5-9b2b-a09202face5b:45dc1802c220a66d78359904ad188fb5"
 const FAL_API_KEY = "f97be136-5389-431e-8b86-a9cfa51909b3:8acfbd9c8e16d2157a48c92c23ebe509"
 const TEXT_TO_IMAGE_URL = "https://queue.fal.run/fal-ai/nano-banana"
 const IMAGE_TO_3D_URL = "https://queue.fal.run/fal-ai/trellis"
@@ -158,7 +158,6 @@ func setup_ui() -> void:
 	detail_timestamp.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	detail_vbox.add_child(detail_timestamp)
 
-	# Connect dropdown selection change
 	image_source_dropdown.item_selected.connect(_on_image_source_changed)
 
 func setup_file_watcher() -> void:
@@ -168,7 +167,6 @@ func setup_file_watcher() -> void:
 	refresh_timer.autostart = true
 	refresh_timer.timeout.connect(_check_for_changes)
 	add_child(refresh_timer)
-	print("File watcher started")
 
 func update_last_modified_time() -> void:
 	if FileAccess.file_exists(assets_metadata_path):
@@ -556,17 +554,6 @@ func create_asset_item(asset: Dictionary) -> Control:
 			texture_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			panel.add_child(texture_rect)
 
-			# Add 3D badge overlay
-			if asset.has("mesh_file") and not asset.mesh_file.is_empty():
-				var badge = Label.new()
-				badge.text = "3D"
-				badge.add_theme_font_size_override("font_size", 10)
-				badge.add_theme_color_override("font_color", Color.WHITE)
-				badge.add_theme_color_override("font_outline_color", Color.BLACK)
-				badge.add_theme_constant_override("outline_size", 2)
-				badge.position = Vector2(5, 5)
-				badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				panel.add_child(badge)
 
 	container.add_child(panel)
 
