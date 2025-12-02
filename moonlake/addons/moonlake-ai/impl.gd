@@ -9,8 +9,12 @@ const IMAGE_TO_3D_URL = "https://queue.fal.run/fal-ai/trellis"
 var assets_dir = "res://ai_generated_assets/"
 var assets_metadata_path = "res://ai_generated_assets/metadata.json"
 var assets = []
+var is_generating = false
+var last_metadata_modified_time: int = 0
+var refresh_timer: Timer
 
 # UI references
+var image_source_dropdown: OptionButton
 var prompt_input: TextEdit
 var generate_btn: Button
 var status_label: Label
@@ -27,10 +31,13 @@ var mesh_generator: MeshGenerator
 func _enter_tree() -> void:
 	setup_ui()
 	setup_generators()
+	setup_file_watcher()
 
 func _ready() -> void:
 	load_assets()
 	populate_browser()
+	populate_image_dropdown()
+	update_last_modified_time()
 
 func setup_ui() -> void:
 	var ui_refs = MoonlakeUI.setup_ui(self, {
@@ -38,6 +45,7 @@ func setup_ui() -> void:
 	})
 
 	# Store UI references
+	image_source_dropdown = ui_refs.image_source_dropdown
 	prompt_input = ui_refs.prompt_input
 	generate_btn = ui_refs.generate_btn
 	status_label = ui_refs.status_label
@@ -46,6 +54,35 @@ func setup_ui() -> void:
 	detail_prompt = ui_refs.detail_prompt
 	detail_image = ui_refs.detail_image
 	detail_timestamp = ui_refs.detail_timestamp
+
+	# Connect dropdown selection change
+	image_source_dropdown.item_selected.connect(_on_image_source_changed)
+
+func setup_file_watcher() -> void:
+	# Create a timer to check for file changes every 2 seconds
+	refresh_timer = Timer.new()
+	refresh_timer.wait_time = 2.0
+	refresh_timer.autostart = true
+	refresh_timer.timeout.connect(_check_for_changes)
+	add_child(refresh_timer)
+	print("File watcher started")
+
+func update_last_modified_time() -> void:
+	if FileAccess.file_exists(assets_metadata_path):
+		last_metadata_modified_time = FileAccess.get_modified_time(assets_metadata_path)
+
+func _check_for_changes() -> void:
+	if not FileAccess.file_exists(assets_metadata_path):
+		return
+
+	var current_modified_time = FileAccess.get_modified_time(assets_metadata_path)
+
+	if current_modified_time != last_metadata_modified_time:
+		print("Assets folder changed, refreshing...")
+		last_metadata_modified_time = current_modified_time
+		load_assets()
+		populate_browser()
+		populate_image_dropdown()
 
 func setup_generators() -> void:
 	# Create image generator
@@ -62,22 +99,106 @@ func setup_generators() -> void:
 	mesh_generator.generation_failed.connect(_on_mesh_gen_failed)
 	mesh_generator.status_updated.connect(_on_status_updated)
 
+func populate_image_dropdown() -> void:
+	# Clear existing items except the first one
+	while image_source_dropdown.item_count > 1:
+		image_source_dropdown.remove_item(1)
+
+	# Add existing assets with images
+	for i in range(assets.size()):
+		var asset = assets[i]
+		if asset.has("image_url") and not asset.image_url.is_empty():
+			var label = asset.prompt.substr(0, 30) + ("..." if asset.prompt.length() > 30 else "")
+			image_source_dropdown.add_item(label, i + 1)
+
+func _on_image_source_changed(index: int) -> void:
+	if index == 0:
+		# Generate new image mode
+		prompt_input.text = ""
+		prompt_input.placeholder_text = "Describe the 3D asset you want to generate..."
+	else:
+		# Use existing image mode - pre-fill but allow editing
+		var asset_index = image_source_dropdown.get_item_id(index) - 1
+		if asset_index >= 0 and asset_index < assets.size():
+			var asset = assets[asset_index]
+			prompt_input.text = asset.prompt
+			prompt_input.placeholder_text = "Edit prompt for this image..."
+
 func _on_generate_pressed() -> void:
-	var prompt = prompt_input.text.strip_edges()
-
-	if prompt.is_empty():
-		status_label.text = "Error: Please enter a prompt"
+	# Prevent starting a new generation while one is in progress
+	if is_generating:
+		status_label.text = "Error: Generation already in progress, please wait..."
 		return
 
-	if FAL_API_KEY.is_empty():
-		status_label.text = "Error: Please set FAL_API_KEY in the script"
+	var selected_index = image_source_dropdown.selected
+
+	if selected_index == 0:
+		# Generate new image from prompt
+		var prompt = prompt_input.text.strip_edges()
+
+		if prompt.is_empty():
+			status_label.text = "Error: Please enter a prompt"
+			return
+
+		if FAL_API_KEY.is_empty():
+			status_label.text = "Error: Please set FAL_API_KEY in the script"
+			return
+
+		is_generating = true
+		generate_btn.disabled = true
+		status_label.text = "Step 1/2: Generating image from prompt..."
+
+		# Start image generation
+		image_generator.generate_image(prompt)
+	else:
+		# Use existing image for mesh generation with current prompt
+		var asset_index = image_source_dropdown.get_item_id(selected_index) - 1
+		if asset_index >= 0 and asset_index < assets.size():
+			var asset = assets[asset_index]
+
+			if not asset.has("image_url") or asset.image_url.is_empty():
+				status_label.text = "Error: Selected asset has no image"
+				return
+
+			# Use the current prompt text (which may have been edited)
+			var current_prompt = prompt_input.text.strip_edges()
+			if current_prompt.is_empty():
+				status_label.text = "Error: Please enter a prompt"
+				return
+
+			is_generating = true
+			generate_btn.disabled = true
+			status_label.text = "Generating 3D mesh from existing image with custom prompt..."
+
+			# Download the existing image and generate mesh with current prompt
+			download_existing_image_for_mesh(asset.image_url, current_prompt)
+		else:
+			status_label.text = "Error: Invalid asset selected"
+
+func download_existing_image_for_mesh(image_url: String, prompt: String):
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(_on_existing_image_downloaded.bind(prompt, image_url))
+
+	print("Downloading existing image: ", image_url)
+	var error = http.request(image_url)
+
+	if error != OK:
+		status_label.text = "Error: Failed to download existing image"
+		generate_btn.disabled = false
+		http.queue_free()
+
+func _on_existing_image_downloaded(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray, prompt: String, image_url: String):
+	var http = get_children().filter(func(n): return n is HTTPRequest)[0]
+	http.queue_free()
+
+	if response_code != 200:
+		status_label.text = "Error: Failed to download existing image"
+		generate_btn.disabled = false
 		return
 
-	generate_btn.disabled = true
-	status_label.text = "Step 1/2: Generating image from prompt..."
-
-	# Start image generation
-	image_generator.generate_image(prompt)
+	# Start mesh generation with the existing image
+	mesh_generator.generate_mesh(image_url, prompt, body)
 
 func _on_status_updated(status_text: String) -> void:
 	status_label.text = status_text
@@ -85,10 +206,12 @@ func _on_status_updated(status_text: String) -> void:
 func _on_image_gen_failed(error_message: String) -> void:
 	status_label.text = "Error: " + error_message
 	generate_btn.disabled = false
+	is_generating = false
 
 func _on_mesh_gen_failed(error_message: String) -> void:
 	status_label.text = "Error: " + error_message
 	generate_btn.disabled = false
+	is_generating = false
 
 func _on_image_generated(image_url: String, image_data: PackedByteArray, prompt: String) -> void:
 	# Image generation complete, start mesh generation
@@ -186,13 +309,41 @@ func _on_mesh_file_downloaded(result: int, response_code: int, headers: PackedSt
 		file.store_buffer(body)
 		file.close()
 		print("Saved mesh file to: ", mesh_path)
+
+		# Create a scene file for the mesh
+		create_scene_for_mesh(mesh_path, mesh_filename, asset_id)
+
 		status_label.text = "Success! 3D asset generated and saved."
 	else:
 		status_label.text = "Error: Failed to save mesh file"
 		print("Failed to open file for writing: ", mesh_path)
 
+	is_generating = false
 	generate_btn.disabled = false
 	populate_browser()
+
+func create_scene_for_mesh(mesh_path: String, mesh_filename: String, asset_id: String):
+	# Create a scene file that wraps the GLB mesh
+	var scene_content = '[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="%s" id="1"]
+
+[node name="GeneratedAsset" instance=ExtResource("1")]
+' % mesh_path
+
+	var scene_path = assets_dir + "scene_" + asset_id + ".tscn"
+	var scene_file = FileAccess.open(scene_path, FileAccess.WRITE)
+	if scene_file:
+		scene_file.store_string(scene_content)
+		scene_file.close()
+		print("Created scene file: ", scene_path)
+
+		# Update asset metadata with scene path
+		for asset in assets:
+			if asset.id == asset_id:
+				asset["scene_file"] = "scene_" + asset_id + ".tscn"
+				save_metadata()
+				break
 
 func load_assets() -> void:
 	if FileAccess.file_exists(assets_metadata_path):
@@ -209,6 +360,8 @@ func save_metadata():
 	if file:
 		file.store_string(JSON.stringify(assets, "\t"))
 		file.close()
+		# Update our tracked modification time after saving
+		update_last_modified_time()
 
 func populate_browser() -> void:
 	for child in asset_grid.get_children():
@@ -217,6 +370,9 @@ func populate_browser() -> void:
 	for asset in assets:
 		var item = create_asset_item(asset)
 		asset_grid.add_child(item)
+
+	# Also update the dropdown
+	populate_image_dropdown()
 
 func create_asset_item(asset: Dictionary) -> Control:
 	var container = VBoxContainer.new()

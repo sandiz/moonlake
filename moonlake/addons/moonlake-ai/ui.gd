@@ -27,6 +27,16 @@ static func setup_ui(parent: Control, callbacks: Dictionary) -> Dictionary:
 	vbox.add_child(prompt_input)
 	ui_refs["prompt_input"] = prompt_input
 
+	# Image source selection
+	var source_label = Label.new()
+	source_label.text = "Or generate from existing asset:"
+	vbox.add_child(source_label)
+
+	var image_source_dropdown = OptionButton.new()
+	image_source_dropdown.add_item("(Generate new image)", 0)
+	vbox.add_child(image_source_dropdown)
+	ui_refs["image_source_dropdown"] = image_source_dropdown
+
 	var generate_btn = Button.new()
 	generate_btn.text = "Generate 3D Asset"
 	if callbacks.has("on_generate"):

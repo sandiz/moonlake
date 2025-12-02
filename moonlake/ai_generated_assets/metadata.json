@@ -1,20 +1,22 @@
 [
 	{
-		"created_at": "2025-12-02T12:41:59",
-		"id": "2658880",
-		"image_url": "https://v3b.fal.media/files/b/0a84bb19/u0qoU9sKHuE7zCv66SLYd.png",
-		"mesh_file": "mesh_2658880.glb",
-		"mesh_url": "https://v3b.fal.media/files/b/0a84bb1b/xrMlsrqNHVOZ9Ng9KRFw9_model.glb",
+		"created_at": "2025-12-02T13:15:48",
+		"id": "4687941",
+		"image_url": "https://v3b.fal.media/files/b/0a84bbe3/xDU7itNk5qymniiwLXCle.png",
+		"mesh_file": "mesh_4687941.glb",
+		"mesh_url": "https://v3b.fal.media/files/b/0a84bbe6/k4FgEFOEyi7X3h-9Z178B_model.glb",
 		"prompt": "teapot",
-		"thumbnail": "thumb_2658880.png"
+		"scene_file": "scene_4687941.tscn",
+		"thumbnail": "thumb_4687941.png"
 	},
 	{
-		"created_at": "2025-12-02T12:55:56",
-		"id": "3495180",
-		"image_url": "https://v3b.fal.media/files/b/0a84bb6a/sNifwgMOvhpj7-L3X87Ey.png",
-		"mesh_file": "mesh_3495180.glb",
-		"mesh_url": "https://v3b.fal.media/files/b/0a84bb6f/Gd3p-fI7IARF5xKpaBJVG_model.glb",
-		"prompt": "teapot",
-		"thumbnail": "thumb_3495180.png"
+		"created_at": "2025-12-02T13:17:09",
+		"id": "4768002",
+		"image_url": "https://v3b.fal.media/files/b/0a84bbe3/xDU7itNk5qymniiwLXCle.png",
+		"mesh_file": "mesh_4768002.glb",
+		"mesh_url": "https://v3b.fal.media/files/b/0a84bbee/jU4nLA5PhEGGg5gHEHdoi_model.glb",
+		"prompt": "teapot with a car next to it",
+		"scene_file": "scene_4768002.tscn",
+		"thumbnail": "thumb_4768002.png"
 	}
 ]

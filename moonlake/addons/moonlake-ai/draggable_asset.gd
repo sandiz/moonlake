@@ -13,15 +13,15 @@ func setup(asset: Dictionary, dir: String):
 	custom_minimum_size = Vector2(100, 100)
 
 func _get_drag_data(at_position: Vector2):
-	# Only allow dragging if there's a mesh file
-	if not asset_data.has("mesh_file") or asset_data.mesh_file.is_empty():
+	# Only allow dragging if there's a scene file
+	if not asset_data.has("scene_file") or asset_data.scene_file.is_empty():
 		return null
 
-	var mesh_path = assets_dir + asset_data.mesh_file
-	if not FileAccess.file_exists(mesh_path):
+	var scene_path = assets_dir + asset_data.scene_file
+	if not FileAccess.file_exists(scene_path):
 		return null
 
-	print("Starting drag for: ", mesh_path)
+	print("Starting drag for scene: ", scene_path)
 
 	# Create drag preview
 	var preview = VBoxContainer.new()
@@ -41,7 +41,7 @@ func _get_drag_data(at_position: Vector2):
 			preview.add_child(texture_rect)
 
 	var label = Label.new()
-	label.text = asset_data.mesh_file
+	label.text = asset_data.scene_file if asset_data.has("scene_file") else "3D Asset"
 	label.add_theme_font_size_override("font_size", 10)
 	preview.add_child(label)
 
@@ -50,7 +50,7 @@ func _get_drag_data(at_position: Vector2):
 	# Return drag data in the format the editor expects
 	return {
 		"type": "files",
-		"files": [mesh_path]
+		"files": [scene_path]
 	}
 
 func _gui_input(event: InputEvent):
