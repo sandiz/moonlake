@@ -24,11 +24,13 @@ func generate_mesh(image_url: String, prompt: String, image_data: PackedByteArra
 	]
 
 	var body = JSON.stringify({
-		"image_url": image_url
+		"image_url": image_url,
+		"prompt": prompt
 	})
 
 	print("Sending 3D mesh request to: ", api_url)
 	print("Image URL: ", image_url)
+	print("Prompt: ", prompt)
 
 	var error = http.request(api_url, headers, HTTPClient.METHOD_POST, body)
 
