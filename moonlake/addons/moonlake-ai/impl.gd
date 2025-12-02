@@ -16,6 +16,8 @@ var refresh_timer: Timer
 # UI references
 var image_source_dropdown: OptionButton
 var prompt_input: TextEdit
+var drawing_canvas: DrawingCanvas
+var clear_canvas_btn: Button
 var generate_btn: Button
 var status_label: Label
 var asset_grid: GridContainer
@@ -40,20 +42,121 @@ func _ready() -> void:
 	update_last_modified_time()
 
 func setup_ui() -> void:
-	var ui_refs = MoonlakeUI.setup_ui(self, {
-		"on_generate": _on_generate_pressed
-	})
+	var vbox = VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	add_child(vbox)
 
-	# Store UI references
-	image_source_dropdown = ui_refs.image_source_dropdown
-	prompt_input = ui_refs.prompt_input
-	generate_btn = ui_refs.generate_btn
-	status_label = ui_refs.status_label
-	asset_grid = ui_refs.asset_grid
-	detail_panel = ui_refs.detail_panel
-	detail_prompt = ui_refs.detail_prompt
-	detail_image = ui_refs.detail_image
-	detail_timestamp = ui_refs.detail_timestamp
+	var title = Label.new()
+	title.text = "Moonlake AI"
+	vbox.add_child(title)
+
+	vbox.add_child(HSeparator.new())
+
+	var prompt_label = Label.new()
+	prompt_label.text = "Enter Prompt:"
+	vbox.add_child(prompt_label)
+
+	prompt_input = TextEdit.new()
+	prompt_input.custom_minimum_size = Vector2(0, 80)
+	prompt_input.placeholder_text = "Describe the 3D asset you want to generate..."
+	vbox.add_child(prompt_input)
+
+	# Image source selection
+	var source_label = Label.new()
+	source_label.text = "Or generate from existing asset:"
+	vbox.add_child(source_label)
+
+	image_source_dropdown = OptionButton.new()
+	image_source_dropdown.add_item("(Generate new image)", 0)
+	vbox.add_child(image_source_dropdown)
+
+	vbox.add_child(HSeparator.new())
+
+	# Drawing canvas section
+	var draw_label = Label.new()
+	draw_label.text = "Or just draw!"
+	vbox.add_child(draw_label)
+
+	drawing_canvas = DrawingCanvas.new()
+	vbox.add_child(drawing_canvas)
+
+	var canvas_buttons = HBoxContainer.new()
+	vbox.add_child(canvas_buttons)
+
+	clear_canvas_btn = Button.new()
+	clear_canvas_btn.text = "Clear Drawing"
+	clear_canvas_btn.pressed.connect(_on_clear_canvas_pressed)
+	canvas_buttons.add_child(clear_canvas_btn)
+
+	generate_btn = Button.new()
+	generate_btn.text = "Generate 3D Asset"
+	generate_btn.pressed.connect(_on_generate_pressed)
+	vbox.add_child(generate_btn)
+
+	status_label = Label.new()
+	status_label.text = ""
+	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vbox.add_child(status_label)
+
+	vbox.add_child(HSeparator.new())
+
+	# Asset Browser
+	var browser_label = Label.new()
+	browser_label.text = "Generated Assets:"
+	vbox.add_child(browser_label)
+
+	var scroll = ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 200)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(scroll)
+
+	asset_grid = GridContainer.new()
+	asset_grid.columns = 3
+	asset_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(asset_grid)
+
+	vbox.add_child(HSeparator.new())
+
+	detail_panel = Panel.new()
+	detail_panel.custom_minimum_size = Vector2(0, 500)
+	detail_panel.visible = false
+	vbox.add_child(detail_panel)
+
+	var detail_margin = MarginContainer.new()
+	detail_margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	detail_margin.add_theme_constant_override("margin_left", 10)
+	detail_margin.add_theme_constant_override("margin_right", 10)
+	detail_margin.add_theme_constant_override("margin_top", 10)
+	detail_margin.add_theme_constant_override("margin_bottom", 10)
+	detail_panel.add_child(detail_margin)
+
+	var detail_vbox = VBoxContainer.new()
+	detail_vbox.add_theme_constant_override("separation", 8)
+	detail_margin.add_child(detail_vbox)
+
+	var detail_title = Label.new()
+	detail_title.text = "Asset Details"
+	detail_title.add_theme_font_size_override("font_size", 16)
+	detail_vbox.add_child(detail_title)
+
+	detail_vbox.add_child(HSeparator.new())
+
+	detail_prompt = Label.new()
+	detail_prompt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail_vbox.add_child(detail_prompt)
+
+	detail_image = TextureRect.new()
+	detail_image.custom_minimum_size = Vector2(200, 200)
+	detail_image.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	detail_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	detail_image.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	detail_vbox.add_child(detail_image)
+
+	detail_timestamp = Label.new()
+	detail_timestamp.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail_vbox.add_child(detail_timestamp)
 
 	# Connect dropdown selection change
 	image_source_dropdown.item_selected.connect(_on_image_source_changed)
@@ -111,6 +214,10 @@ func populate_image_dropdown() -> void:
 			var label = asset.prompt.substr(0, 30) + ("..." if asset.prompt.length() > 30 else "")
 			image_source_dropdown.add_item(label, i + 1)
 
+func _on_clear_canvas_pressed() -> void:
+	drawing_canvas.clear_canvas()
+	status_label.text = ""
+
 func _on_image_source_changed(index: int) -> void:
 	if index == 0:
 		# Generate new image mode
@@ -123,6 +230,8 @@ func _on_image_source_changed(index: int) -> void:
 			var asset = assets[asset_index]
 			prompt_input.text = asset.prompt
 			prompt_input.placeholder_text = "Edit prompt for this image..."
+		# Clear canvas when selecting existing asset (mutually exclusive)
+		drawing_canvas.clear_canvas()
 
 func _on_generate_pressed() -> void:
 	# Prevent starting a new generation while one is in progress
@@ -130,12 +239,27 @@ func _on_generate_pressed() -> void:
 		status_label.text = "Error: Generation already in progress, please wait..."
 		return
 
+	var prompt = prompt_input.text.strip_edges()
+
+	# Check if we have a drawing (highest priority, mutually exclusive)
+	if not drawing_canvas.is_empty():
+		# Use the drawing for mesh generation
+		if prompt.is_empty():
+			status_label.text = "Error: Please enter a prompt for your drawing"
+			return
+
+		is_generating = true
+		generate_btn.disabled = true
+		status_label.text = "Generating 3D mesh from your drawing..."
+
+		# Convert drawing to image and generate mesh
+		generate_from_drawing(prompt)
+		return
+
 	var selected_index = image_source_dropdown.selected
 
 	if selected_index == 0:
-		# Generate new image from prompt
-		var prompt = prompt_input.text.strip_edges()
-
+		# Generate new image from prompt (already declared at line 144)
 		if prompt.is_empty():
 			status_label.text = "Error: Please enter a prompt"
 			return
@@ -174,6 +298,39 @@ func _on_generate_pressed() -> void:
 			download_existing_image_for_mesh(asset.image_url, current_prompt)
 		else:
 			status_label.text = "Error: Invalid asset selected"
+
+func generate_from_drawing(prompt: String):
+	# Get the canvas image
+	var canvas_image = drawing_canvas.get_canvas_image()
+
+	# Convert image to PNG bytes
+	var png_bytes = canvas_image.save_png_to_buffer()
+
+	# We need to upload the image somewhere or encode it
+	# For now, let's save it locally and use it
+	var timestamp = Time.get_ticks_msec()
+	var temp_image_path = assets_dir + "drawing_" + str(timestamp) + ".png"
+
+	# Ensure directory exists
+	if not DirAccess.dir_exists_absolute(assets_dir):
+		DirAccess.make_dir_recursive_absolute(assets_dir)
+
+	canvas_image.save_png(temp_image_path)
+	print("Saved drawing to: ", temp_image_path)
+
+	# For the mesh generation, we need a URL. Since we can't upload it,
+	# we'll use a local file path approach similar to existing images
+	# The API needs a URL, so we'll need to handle this differently
+
+	# Actually, let's just convert it to base64 data URL
+	var base64_image = Marshalls.raw_to_base64(png_bytes)
+	var data_url = "data:image/png;base64," + base64_image
+
+	status_label.text = "Uploading drawing for mesh generation..."
+
+	# Start mesh generation with the drawing
+	# Note: Not all APIs accept data URLs, we might need to upload it first
+	mesh_generator.generate_mesh(data_url, prompt, png_bytes)
 
 func download_existing_image_for_mesh(image_url: String, prompt: String):
 	var http = HTTPRequest.new()

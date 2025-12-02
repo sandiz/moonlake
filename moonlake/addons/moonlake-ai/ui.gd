@@ -37,6 +37,27 @@ static func setup_ui(parent: Control, callbacks: Dictionary) -> Dictionary:
 	vbox.add_child(image_source_dropdown)
 	ui_refs["image_source_dropdown"] = image_source_dropdown
 
+	vbox.add_child(HSeparator.new())
+
+	# Drawing canvas section
+	var draw_label = Label.new()
+	draw_label.text = "Or just draw!"
+	vbox.add_child(draw_label)
+
+	var canvas = DrawingCanvas.new()
+	vbox.add_child(canvas)
+	ui_refs["drawing_canvas"] = canvas
+
+	var canvas_buttons = HBoxContainer.new()
+	vbox.add_child(canvas_buttons)
+
+	var clear_btn = Button.new()
+	clear_btn.text = "Clear Drawing"
+	if callbacks.has("on_clear_canvas"):
+		clear_btn.pressed.connect(callbacks.on_clear_canvas)
+	canvas_buttons.add_child(clear_btn)
+	ui_refs["clear_canvas_btn"] = clear_btn
+
 	var generate_btn = Button.new()
 	generate_btn.text = "Generate 3D Asset"
 	if callbacks.has("on_generate"):
