@@ -35,6 +35,7 @@ The main Implementation is in **impl.gd**, we use standard Godot classes and sig
 The grid uses metadata.json to generate a list of files -- it uses the thumbnail image as the placeholder in the grid. Each item is ref counted so no leaks and is of class DraggableAsset. It supports drag/drop of 3d objects to scene
   
 **Plugin Structure**
+```
 Plugin EntryPoint - **plugin.gd**
 Plugin Scene Description - **asset-dock.tscn**
 Main Plugin Body - **impl.gd**
@@ -53,7 +54,7 @@ asset_metadata = {
 		"mesh_url": mesh_url,				// url we downloaded it from
 		"created_at": timestamp				// creation
 	}
-
+```
 **What Works:**
 1.  Plugin shows proper dock on right sidebar
 2.  You will see a textbox to enter prompt
