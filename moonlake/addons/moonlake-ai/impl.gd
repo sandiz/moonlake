@@ -222,12 +222,10 @@ func create_asset_item(asset: Dictionary) -> Control:
 	var container = VBoxContainer.new()
 	container.custom_minimum_size = Vector2(100, 120)
 
-	# Use a Panel instead of Button for better drag-and-drop
-	var panel = Panel.new()
-	panel.custom_minimum_size = Vector2(100, 100)
-
-	# Make it clickable
-	panel.gui_input.connect(_on_asset_panel_input.bind(asset))
+	# Create draggable panel
+	var panel = DraggableAsset.new()
+	panel.setup(asset, assets_dir)
+	panel.asset_clicked.connect(_on_asset_clicked)
 
 	var thumb_path = assets_dir + asset.thumbnail
 	if FileAccess.file_exists(thumb_path):
@@ -257,9 +255,6 @@ func create_asset_item(asset: Dictionary) -> Control:
 				badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 				panel.add_child(badge)
 
-	# Store asset data on the panel for drag-and-drop
-	panel.set_meta("asset_data", asset)
-
 	container.add_child(panel)
 
 	var label = Label.new()
@@ -278,61 +273,7 @@ func create_asset_item(asset: Dictionary) -> Control:
 		mesh_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 		container.add_child(mesh_label)
 
-	# Enable drag-and-drop
-	container.set_drag_forwarding(
-		Callable(),
-		_get_drag_data_for_asset.bind(asset),
-		Callable()
-	)
-
 	return container
-
-func _on_asset_panel_input(event: InputEvent, asset: Dictionary):
-	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-			_on_asset_clicked(asset)
-
-func _get_drag_data_for_asset(from_position: Vector2, asset: Dictionary):
-	# Only allow dragging if there's a mesh file
-	if not asset.has("mesh_file") or asset.mesh_file.is_empty():
-		return null
-
-	var mesh_path = assets_dir + asset.mesh_file
-	if not FileAccess.file_exists(mesh_path):
-		return null
-
-	print("Starting drag for: ", mesh_path)
-
-	# Create drag preview
-	var preview = VBoxContainer.new()
-
-	var thumb_path = assets_dir + asset.thumbnail
-	if FileAccess.file_exists(thumb_path):
-		var image_bytes = FileAccess.get_file_as_bytes(thumb_path)
-		var image = Image.new()
-		var error = image.load_png_from_buffer(image_bytes)
-		if error == OK:
-			var texture = ImageTexture.create_from_image(image)
-			var texture_rect = TextureRect.new()
-			texture_rect.texture = texture
-			texture_rect.custom_minimum_size = Vector2(64, 64)
-			texture_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-			texture_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			preview.add_child(texture_rect)
-
-	var label = Label.new()
-	label.text = asset.mesh_file
-	label.add_theme_font_size_override("font_size", 10)
-	preview.add_child(label)
-
-	set_drag_preview(preview)
-
-	# Return drag data in the format the editor expects
-	# For scene files, we need to provide a "files" array
-	return {
-		"type": "files",
-		"files": [mesh_path]
-	}
 
 func _on_asset_clicked(asset: Dictionary):
 	detail_panel.visible = true
