@@ -356,7 +356,7 @@ func _on_existing_image_downloaded(result: int, response_code: int, headers: Pac
 	#var data_url = "data:image/png;base64," + base64_image
 
 	# Start mesh generation with the existing image
-	#mesh_generator.generate_mesh(image_url, prompt, body)
+	mesh_generator.generate_mesh(image_url, prompt, body)
 	#image_generator.generate_image()
 
 func _on_status_updated(status_text: String) -> void:
