@@ -352,8 +352,12 @@ func _on_existing_image_downloaded(result: int, response_code: int, headers: Pac
 		generate_btn.disabled = false
 		return
 
+	#var base64_image = Marshalls.raw_to_base64(body)
+	#var data_url = "data:image/png;base64," + base64_image
+
 	# Start mesh generation with the existing image
-	mesh_generator.generate_mesh(image_url, prompt, body)
+	#mesh_generator.generate_mesh(image_url, prompt, body)
+	#image_generator.generate_image()
 
 func _on_status_updated(status_text: String) -> void:
 	status_label.text = status_text
@@ -558,20 +562,10 @@ func create_asset_item(asset: Dictionary) -> Control:
 	container.add_child(panel)
 
 	var label = Label.new()
-	label.text = asset.prompt.substr(0, 15) + ("..." if asset.prompt.length() > 15 else "")
+	label.text = asset.prompt.substr(0, 10) + ("..." if asset.prompt.length() > 10 else "")
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	container.add_child(label)
-
-	# Show mesh format below prompt
-	if asset.has("mesh_file") and not asset.mesh_file.is_empty():
-		var mesh_label = Label.new()
-		var extension = asset.mesh_file.get_extension().to_upper()
-		mesh_label.text = "[" + extension + " Model]"
-		mesh_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		mesh_label.add_theme_font_size_override("font_size", 9)
-		mesh_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-		container.add_child(mesh_label)
 
 	return container
 

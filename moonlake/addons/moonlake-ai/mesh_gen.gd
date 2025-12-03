@@ -29,7 +29,7 @@ func generate_mesh(image_url: String, prompt: String, image_data: PackedByteArra
 	})
 
 	print("Sending 3D mesh request to: ", api_url)
-	print("Image URL: ", image_url)
+	print("Image URL: ", image_url if image_url.contains("https://") else image_url.substr(0, 20))
 	print("Prompt: ", prompt)
 
 	var error = http.request(api_url, headers, HTTPClient.METHOD_POST, body)
